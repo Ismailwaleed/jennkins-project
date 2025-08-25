@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+    environment {
+        DB1_CONTAINER = "postgres1"
+        DB2_CONTAINER = "postgres2"
+        DB_USER = "admin"
+        DB_NAME = "schooldb"
+    }
+    stages {
+        stage('Backup and Restore') {
+            steps {
+                sh """
+                  echo "Checking column count in DB1 (students)..."
+                  docker exec $DB1_CONTAINER psql -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM information_schema.columns WHERE table_name='students';"
+
+                  echo "Streaming DB1 → DB2..."
+                  docker exec $DB1_CONTAINER pg_dump -U $DB_USER $DB_NAME \
+                  | docker exec -i $DB2_CONTAINER psql -U $DB_USER $DB_NAME
+                """
+            }
+        }
+        stage('Verify Restore') {
+            steps {
+                sh """
+                  echo "Checking column count in DB2 (students)..."
+                  docker exec $DB2_CONTAINER psql -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM information_schema.columns WHERE table_name='students';"
+
+                  echo "Checking row count in DB2 (students)..."
+                  docker exec $DB2_CONTAINER psql -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM students;"
+                """
+            }
+        }
+    }
+}

@@ -1,0 +1,32 @@
+CREATE TABLE schools (
+    id SERIAL PRIMARY KEY,
+    school_name VARCHAR(100),
+    country VARCHAR(50),
+    number_of_students INT
+);
+
+CREATE TABLE students (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    join_date DATE,
+    grade VARCHAR(10),
+    school_name VARCHAR(100),
+    phone_number VARCHAR(20)
+);
+
+-- insert some sample schools
+INSERT INTO schools (school_name, country, number_of_students)
+SELECT 'School ' || g, 'Country' || (g % 5), (50 + g*2)
+FROM generate_series(1,200) g;
+
+-- insert students
+INSERT INTO students (name, join_date, grade, school_name, phone_number)
+SELECT 'Student ' || g,
+       CURRENT_DATE - (g || ' days')::INTERVAL,
+       CASE WHEN g % 4 = 0 THEN 'A'
+            WHEN g % 4 = 1 THEN 'B'
+            WHEN g % 4 = 2 THEN 'C'
+            ELSE 'D' END,
+       'School ' || ((g % 200) + 1),
+       '555-000' || g
+FROM generate_series(1,200) g;
